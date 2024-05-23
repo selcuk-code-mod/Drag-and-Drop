@@ -11,30 +11,19 @@ interface Quote {
   id: string;
   content: string;
 }
-interface QuoteType {
-  id: string;
-  content: string;
-}
 
-interface QuoteProps {
-  quote: QuoteType;
-  index: number;
-}
-interface QuoteListProps {
-  quotes: QuoteType[];
-}
-
-const initial = Array.from({ length: 10 }, (_v, k) => k).map((k) => {
-  const custom: Quote = {
-    id: `id-${k}`,
-    content: `Quote ${k}`,
-  };
-
-  return custom;
-});
+const initial: Quote[] = Array.from({ length: 10 }, (_, k) => ({
+  id: `id-${k}`,
+  content: `Quote ${k}`,
+}));
 
 const grid = 8;
-const reorder = (list: number[], startIndex: number, endIndex: number) => {
+
+const reorder = (
+  list: Quote[],
+  startIndex: number,
+  endIndex: number
+): Quote[] => {
   const result = Array.from(list);
   const [removed] = result.splice(startIndex, 1);
   result.splice(endIndex, 0, removed);
@@ -48,36 +37,38 @@ const QuoteItem = styled.div`
   margin-bottom: ${grid}px;
   background-color: lightblue;
   padding: ${grid}px;
+  cursor: pointer;
 `;
 
-const Quote: React.FC<QuoteProps> = ({ quote, index }) => {
-  return (
-    <Draggable draggableId={quote.id} index={index}>
-      {(provided) => (
-        <QuoteItem
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-        >
-          {quote.content}
-        </QuoteItem>
-      )}
-    </Draggable>
-  );
-};
+const QuoteComponent: React.FC<{ quote: Quote; index: number }> = ({
+  quote,
+  index,
+}) => (
+  <Draggable draggableId={quote.id} index={index}>
+    {(provided) => (
+      <QuoteItem
+        ref={provided.innerRef}
+        {...provided.draggableProps}
+        {...provided.dragHandleProps}
+      >
+        {quote.content}
+      </QuoteItem>
+    )}
+  </Draggable>
+);
 
-const QuoteList: React.FC<QuoteListProps> = React.memo(function QuoteList({
-  quotes,
-}) {
-  return quotes.map((quote: QuoteType, index: number) => (
-    <Quote quote={quote} index={index} key={quote.id} />
-  ));
-});
+const QuoteList: React.FC<{ quotes: Quote[] }> = React.memo(({ quotes }) => (
+  <>
+    {quotes.map((quote, index) => (
+      <QuoteComponent quote={quote} index={index} key={quote.id} />
+    ))}
+  </>
+));
 
 function QuoteApp() {
-  const [state, setState] = useState({ quotes: initial });
+  const [quotes, setQuotes] = useState(initial);
 
-  function onDragEnd(result: DropResult) {
+  const onDragEnd = (result: DropResult) => {
     if (!result.destination) {
       return;
     }
@@ -86,21 +77,21 @@ function QuoteApp() {
       return;
     }
 
-    const quotes = reorder(
-      state.quotes,
+    const reorderedQuotes = reorder(
+      quotes,
       result.source.index,
       result.destination.index
     );
 
-    setState({ quotes });
-  }
+    setQuotes(reorderedQuotes);
+  };
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <Droppable droppableId="list">
         {(provided) => (
           <div ref={provided.innerRef} {...provided.droppableProps}>
-            <QuoteList quotes={state.quotes} />
+            <QuoteList quotes={quotes} />
             {provided.placeholder}
           </div>
         )}
